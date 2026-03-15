@@ -583,6 +583,104 @@
     width: 10px; height: 10px;
     border-radius: 2px;
   }
+
+  /* Running details panel */
+  .run-details {
+    grid-column: 1 / -1;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.35s cubic-bezier(.22,1,.36,1), opacity 0.25s ease;
+    opacity: 0;
+  }
+
+  .run-details.open {
+    max-height: 120px;
+    opacity: 1;
+  }
+
+  .run-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding-top: 8px;
+  }
+
+  .run-field {
+    background: rgba(95,255,176,0.05);
+    border: 1px solid rgba(95,255,176,0.2);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .run-field-label {
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .run-field-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .run-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(95,255,176,0.3);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    width: 80px;
+    outline: none;
+    padding: 2px 0;
+    -moz-appearance: textfield;
+  }
+
+  .run-input::-webkit-inner-spin-button,
+  .run-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .run-input:focus { border-bottom-color: var(--accent); }
+
+  .run-unit {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* Running stats card */
+  .run-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .run-stat-box {
+    background: rgba(95,255,176,0.06);
+    border: 1px solid rgba(95,255,176,0.15);
+    border-radius: 10px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+
+  .run-stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .run-stat-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 </style>
 </head>
 <body>
@@ -612,9 +710,29 @@
 
     <div class="tasks-grid" id="tasksGrid">
       <label class="task-item">
-        <input type="checkbox" class="task" data-name="Running">
+        <input type="checkbox" class="task" data-name="Running" id="runningCheck">
         <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">🏃</span>Running</span>
       </label>
+
+      <!-- Running details: expands when Running is checked -->
+      <div class="run-details" id="runDetails">
+        <div class="run-panel">
+          <div class="run-field">
+            <div class="run-field-label">⏱ Duration</div>
+            <div class="run-field-input-wrap">
+              <input class="run-input" type="number" id="runDuration" placeholder="30" min="1" max="600" step="1">
+              <span class="run-unit">min</span>
+            </div>
+          </div>
+          <div class="run-field">
+            <div class="run-field-label">📍 Distance</div>
+            <div class="run-field-input-wrap">
+              <input class="run-input" type="number" id="runDistance" placeholder="5.0" min="0.1" max="200" step="0.1">
+              <span class="run-unit">km</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <label class="task-item">
         <input type="checkbox" class="task" data-name="Gym">
         <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">🏋️</span>Gym</span>
@@ -766,6 +884,41 @@
     <canvas id="weightCanvas" height="160"></canvas>
   </div>
 
+  <!-- Running Stats -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">🏃 Running Stats</span>
+    </div>
+    <div class="run-stats-grid">
+      <div class="run-stat-box">
+        <div class="run-stat-val" id="runTotalKm">0</div>
+        <div class="run-stat-lbl">Total km</div>
+      </div>
+      <div class="run-stat-box">
+        <div class="run-stat-val" id="runTotalRuns">0</div>
+        <div class="run-stat-lbl">Total runs</div>
+      </div>
+      <div class="run-stat-box">
+        <div class="run-stat-val" id="runAvgPace">–</div>
+        <div class="run-stat-lbl">Avg pace /km</div>
+      </div>
+      <div class="run-stat-box">
+        <div class="run-stat-val" id="runAvgDist">–</div>
+        <div class="run-stat-lbl">Avg distance</div>
+      </div>
+      <div class="run-stat-box">
+        <div class="run-stat-val" id="runLongest">–</div>
+        <div class="run-stat-lbl">Longest run</div>
+      </div>
+      <div class="run-stat-box">
+        <div class="run-stat-val" id="runThisWeek">0</div>
+        <div class="run-stat-lbl">km this week</div>
+      </div>
+    </div>
+    <canvas id="runCanvas" height="160"></canvas>
+  </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
@@ -777,10 +930,15 @@ const restBox = document.getElementById('restDay');
 const weightInput = document.getElementById('weight');
 const CIRCUMFERENCE = 2 * Math.PI * 33;
 
-datePicker.valueAsDate = new Date();
+const runningCheck = document.getElementById('runningCheck');
+const runDetails = document.getElementById('runDetails');
+const runDurationInput = document.getElementById('runDuration');
+const runDistanceInput = document.getElementById('runDistance');
 
-// Load day when date changes
-datePicker.addEventListener('change', loadDay);
+runningCheck.addEventListener('change', () => {
+  runDetails.classList.toggle('open', runningCheck.checked);
+});
+
 
 function key(date) { return 'rt2-' + date; }
 
@@ -820,7 +978,9 @@ function saveDay() {
   const data = {
     tasks: [...tasks].map(t => t.checked),
     rest: restBox.checked,
-    weight: weightInput.value
+    weight: weightInput.value,
+    runDuration: runDurationInput.value,
+    runDistance: runDistanceInput.value
   };
   localStorage.setItem(key(date), JSON.stringify(data));
   showToast('✓ Saved for ' + formatDate(date));
@@ -832,6 +992,9 @@ function resetDay() {
   tasks.forEach(t => t.checked = false);
   restBox.checked = false;
   weightInput.value = '';
+  runDurationInput.value = '';
+  runDistanceInput.value = '';
+  runDetails.classList.remove('open');
   updateScoreRing();
   updateAll();
   showToast('✗ Entry cleared');
@@ -843,10 +1006,16 @@ function loadDay() {
   tasks.forEach(t => t.checked = false);
   restBox.checked = false;
   weightInput.value = '';
+  runDurationInput.value = '';
+  runDistanceInput.value = '';
+  runDetails.classList.remove('open');
   if (saved) {
     saved.tasks.forEach((v, i) => { if (tasks[i]) tasks[i].checked = v; });
     restBox.checked = saved.rest || false;
     weightInput.value = saved.weight || '';
+    runDurationInput.value = saved.runDuration || '';
+    runDistanceInput.value = saved.runDistance || '';
+    if (runningCheck.checked) runDetails.classList.add('open');
   }
   updateScoreRing();
 }
@@ -1115,18 +1284,149 @@ function drawWeightChart() {
   });
 }
 
+// ── Running Stats ─────────────────────────────────────────────────────────────
+function updateRunStats() {
+  let totalKm = 0, totalMins = 0, runs = 0, longest = 0, weekKm = 0;
+
+  for (let i = 0; i < 365; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const saved = JSON.parse(localStorage.getItem(key(dateStr(d))));
+    if (!saved || !saved.runDistance) continue;
+
+    const dist = parseFloat(saved.runDistance) || 0;
+    const dur = parseFloat(saved.runDuration) || 0;
+    if (dist <= 0) continue;
+
+    runs++;
+    totalKm += dist;
+    totalMins += dur;
+    if (dist > longest) longest = dist;
+    if (i < 7) weekKm += dist;
+  }
+
+  const avgDist = runs ? (totalKm / runs) : 0;
+  let avgPace = '–';
+  if (totalKm > 0 && totalMins > 0) {
+    const paceMin = Math.floor(totalMins / totalKm);
+    const paceSec = Math.round((totalMins / totalKm - paceMin) * 60);
+    avgPace = paceMin + ':' + String(paceSec).padStart(2, '0');
+  }
+
+  document.getElementById('runTotalKm').textContent = totalKm.toFixed(1);
+  document.getElementById('runTotalRuns').textContent = runs;
+  document.getElementById('runAvgPace').textContent = avgPace;
+  document.getElementById('runAvgDist').textContent = runs ? avgDist.toFixed(1) + 'k' : '–';
+  document.getElementById('runLongest').textContent = longest ? longest.toFixed(1) + 'k' : '–';
+  document.getElementById('runThisWeek').textContent = weekKm.toFixed(1);
+}
+
+// ── Running Distance Chart ────────────────────────────────────────────────────
+function drawRunChart() {
+  const canvas = document.getElementById('runCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 500;
+  canvas.width = W;
+  canvas.height = 160;
+  ctx.clearRect(0, 0, W, 160);
+
+  const points = [];
+  for (let i = 59; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const saved = JSON.parse(localStorage.getItem(key(dateStr(d))));
+    if (saved && parseFloat(saved.runDistance) > 0) {
+      points.push({ day: 60 - i, dist: parseFloat(saved.runDistance), dur: parseFloat(saved.runDuration) || 0 });
+    }
+  }
+
+  if (points.length < 1) {
+    ctx.fillStyle = '#4a5568';
+    ctx.font = '12px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Log running distances to see your trend', W / 2, 80);
+    return;
+  }
+
+  const pad = { t: 20, b: 30, l: 40, r: 16 };
+  const cw = W - pad.l - pad.r;
+  const ch = 160 - pad.t - pad.b;
+
+  const dists = points.map(p => p.dist);
+  const maxD = Math.max(...dists) * 1.2;
+
+  const xScale = i => pad.l + ((i - 1) / 59) * cw;
+  const yScale = v => pad.t + ch - (v / maxD) * ch;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e2730';
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const y = pad.t + (g / 4) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + cw, y); ctx.stroke();
+    const val = maxD - (g / 4) * maxD;
+    ctx.fillStyle = '#4a5568';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(1), pad.l - 4, y + 4);
+  }
+
+  if (points.length >= 2) {
+    // Gradient fill under line
+    const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+    grad.addColorStop(0, 'rgba(95,255,176,0.25)');
+    grad.addColorStop(1, 'rgba(95,255,176,0)');
+    ctx.beginPath();
+    ctx.moveTo(xScale(points[0].day), yScale(points[0].dist));
+    for (let i = 1; i < points.length; i++) ctx.lineTo(xScale(points[i].day), yScale(points[i].dist));
+    ctx.lineTo(xScale(points[points.length - 1].day), pad.t + ch);
+    ctx.lineTo(xScale(points[0].day), pad.t + ch);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.strokeStyle = 'var(--accent)';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.moveTo(xScale(points[0].day), yScale(points[0].dist));
+    for (let i = 1; i < points.length; i++) ctx.lineTo(xScale(points[i].day), yScale(points[i].dist));
+    ctx.stroke();
+  }
+
+  // Dots with tooltip value
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(xScale(p.day), yScale(p.dist), 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'var(--accent)';
+    ctx.fill();
+    ctx.strokeStyle = '#080b10';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Label above dot
+    ctx.fillStyle = '#5fffb0';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.dist.toFixed(1), xScale(p.day), yScale(p.dist) - 7);
+  });
+}
+
+
 function updateAll() {
   drawHeatmap();
   updateDashboard();
   drawWeekBars();
   drawHabitBars();
   drawWeightChart();
+  updateRunStats();
+  drawRunChart();
 }
 
 // Init
 loadDay();
 updateAll();
-window.addEventListener('resize', drawWeightChart);
+window.addEventListener('resize', () => { drawWeightChart(); drawRunChart(); });
 </script>
 </body>
 </html>
