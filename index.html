@@ -10,15 +10,15 @@
 <style>
 
 body{
-font-family:Arial;
-background:#f4f6f8;
+font-family:system-ui;
+background:#f5f7fa;
 margin:0;
 text-align:center;
 transition:0.3s;
 }
 
 .dark{
-background:#1e1e1e;
+background:#121212;
 color:white;
 }
 
@@ -26,16 +26,15 @@ h1{margin-top:20px;}
 
 .container{
 background:white;
-max-width:460px;
+max-width:520px;
 margin:30px auto;
 padding:25px;
-border-radius:10px;
-box-shadow:0 4px 12px rgba(0,0,0,0.1);
-transition:0.3s;
+border-radius:12px;
+box-shadow:0 4px 16px rgba(0,0,0,0.08);
 }
 
 .dark .container{
-background:#2a2a2a;
+background:#1e1e1e;
 }
 
 label{
@@ -58,35 +57,58 @@ cursor:pointer;
 
 .score{
 margin-top:6px;
-font-weight:bold;
+font-weight:600;
 }
+
+.dashboard{
+font-size:14px;
+margin-top:10px;
+}
+
+/* ---------- HEATMAP ---------- */
 
 .heatmap{
 display:grid;
-grid-template-columns:repeat(52,8px);
+grid-template-columns:repeat(53,14px);
+grid-template-rows:repeat(7,14px);
 gap:3px;
 justify-content:center;
 margin-top:20px;
 }
 
 .day{
-width:8px;
-height:8px;
-background:#eee;
+width:14px;
+height:14px;
+border-radius:2px;
+background:#ebedf0;
 }
 
-.level1{background:#c6e48b}
-.level2{background:#7bc96f}
-.level3{background:#239a3b}
-.level4{background:#196127}
+.dark .day{background:#2a2a2a;}
+
+.level1{background:#9be9a8}
+.level2{background:#40c463}
+.level3{background:#30a14e}
+.level4{background:#216e39}
+
+/* tooltip */
+
+.day:hover::after{
+content:attr(data-date);
+position:absolute;
+background:black;
+color:white;
+padding:4px 6px;
+font-size:10px;
+border-radius:4px;
+transform:translate(-20px,-25px);
+white-space:nowrap;
+}
+
+/* charts */
 
 canvas{
-margin-top:20px;
-}
-
-.dashboard{
-margin-top:10px;
-font-size:14px;
+margin-top:25px;
+max-width:100%;
 }
 
 </style>
@@ -97,7 +119,7 @@ font-size:14px;
 
 <h1>📅 Routine Tracker</h1>
 
-<button onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+<button onclick="toggleDark()">🌙 Dark Mode</button>
 
 <div class="container">
 
@@ -144,10 +166,10 @@ Average Completion: <span id="avgCompletion">0%</span>
 <div class="heatmap" id="heatmap"></div>
 
 <h3>Weight Progress</h3>
-<canvas id="weightChart" width="400" height="200"></canvas>
+<canvas id="weightChart" width="420" height="200"></canvas>
 
 <h3>Habit Completion</h3>
-<canvas id="habitChart" width="400" height="200"></canvas>
+<canvas id="habitChart" width="420" height="200"></canvas>
 
 </div>
 
@@ -176,34 +198,11 @@ datePicker.valueAsDate=d;
 loadDay();
 }
 
-function restCount7(date){
-
-let base=new Date(date);
-let rest=0;
-
-for(let i=1;i<=7;i++){
-
-let d=new Date(base);
-d.setDate(base.getDate()-i);
-
-let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-
-if(saved && saved.rest) rest++;
-
-}
-
-return rest;
-
-}
+/* ---------- SCORE ---------- */
 
 function dailyScore(){
 
-if(restBox.checked){
-
-let rc=restCount7(datePicker.value);
-return rc<2?100:0;
-
-}
+if(restBox.checked) return 100;
 
 let done=0;
 tasks.forEach(t=>{if(t.checked) done++;});
@@ -213,14 +212,14 @@ return Math.round(done/tasks.length*100);
 }
 
 function updateScore(){
-
-let score=dailyScore();
-document.getElementById("dailyScore").innerText="Daily Score: "+score+"%";
-
+document.getElementById("dailyScore").innerText=
+"Daily Score: "+dailyScore()+"%";
 }
 
 tasks.forEach(t=>t.addEventListener("change",updateScore));
 restBox.addEventListener("change",updateScore);
+
+/* ---------- SAVE ---------- */
 
 function saveDay(){
 
@@ -247,6 +246,8 @@ aiInsights();
 
 }
 
+/* ---------- LOAD ---------- */
+
 function loadDay(){
 
 let saved=JSON.parse(localStorage.getItem(key(datePicker.value)));
@@ -271,30 +272,16 @@ calcStreak();
 
 }
 
-function resetDay(){
-
-localStorage.removeItem(key(datePicker.value));
-
-tasks.forEach(t=>t.checked=false);
-restBox.checked=false;
-weightInput.value="";
-
-updateScore();
-weeklyAvg();
-calcStreak();
-
-}
+/* ---------- WEEKLY ---------- */
 
 function weeklyAvg(){
 
-let base=new Date(datePicker.value);
-let total=0;
-let days=0;
+let total=0,days=0;
 
 for(let i=0;i<7;i++){
 
-let d=new Date(base);
-d.setDate(base.getDate()-i);
+let d=new Date();
+d.setDate(d.getDate()-i);
 
 let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
 
@@ -302,17 +289,8 @@ if(saved){
 
 days++;
 
-if(saved.rest){
-
-let rc=restCount7(d);
-if(rc<2) total+=100;
-
-}else{
-
 let c=saved.tasks.filter(x=>x).length;
 total+=Math.round(c/tasks.length*100);
-
-}
 
 }
 
@@ -324,6 +302,8 @@ document.getElementById("weeklyScore").innerText="Weekly Avg: "+avg+"%";
 
 }
 
+/* ---------- STREAK ---------- */
+
 function calcStreak(){
 
 let streak=0;
@@ -334,9 +314,11 @@ let d=new Date();
 d.setDate(d.getDate()-i);
 
 let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
+
 if(!saved) break;
 
-let score=saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
+let c=saved.tasks.filter(x=>x).length;
+let score=Math.round(c/tasks.length*100);
 
 if(score>=80) streak++;
 else break;
@@ -346,6 +328,8 @@ else break;
 document.getElementById("streak").innerText="Streak: "+streak+" days";
 
 }
+
+/* ---------- HEATMAP ---------- */
 
 function drawHeatmap(){
 
@@ -361,13 +345,12 @@ let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
 let score=0;
 
 if(saved){
-
-score=saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
-
+score=Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
 }
 
 let div=document.createElement("div");
 div.className="day";
+div.dataset.date=d.toISOString().slice(0,10);
 
 if(score>0 && score<40) div.classList.add("level1");
 if(score>=40 && score<70) div.classList.add("level2");
@@ -380,12 +363,14 @@ map.appendChild(div);
 
 }
 
+/* ---------- CHARTS ---------- */
+
 function drawWeightChart(){
 
 const canvas=document.getElementById("weightChart");
 const ctx=canvas.getContext("2d");
 
-ctx.clearRect(0,0,400,200);
+ctx.clearRect(0,0,420,200);
 
 let points=[];
 
@@ -405,10 +390,14 @@ let min=Math.min(...points.filter(x=>x));
 ctx.beginPath();
 
 points.forEach((w,i)=>{
+
 if(!w) return;
-let x=i*(400/30);
+
+let x=i*(420/30);
 let y=200-(w-min)/(max-min)*180;
+
 ctx.lineTo(x,y);
+
 });
 
 ctx.stroke();
@@ -420,7 +409,7 @@ function drawHabitChart(){
 const canvas=document.getElementById("habitChart");
 const ctx=canvas.getContext("2d");
 
-ctx.clearRect(0,0,400,200);
+ctx.clearRect(0,0,420,200);
 
 let values=[];
 
@@ -432,7 +421,7 @@ d.setDate(d.getDate()-i);
 let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
 
 if(saved){
-values.push(saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100));
+values.push(Math.round(saved.tasks.filter(x=>x).length/tasks.length*100));
 }else{
 values.push(null);
 }
@@ -443,7 +432,7 @@ ctx.beginPath();
 
 values.forEach((v,i)=>{
 if(v==null) return;
-let x=i*(400/30);
+let x=i*(420/30);
 let y=200-v*2;
 ctx.lineTo(x,y);
 });
@@ -451,6 +440,8 @@ ctx.lineTo(x,y);
 ctx.stroke();
 
 }
+
+/* ---------- DASHBOARD ---------- */
 
 function updateDashboard(){
 
@@ -467,7 +458,7 @@ if(saved){
 
 total++;
 
-let score=saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
+let score=Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
 
 totalScore+=score;
 
@@ -484,9 +475,12 @@ current=0;
 
 document.getElementById("totalDays").innerText=total;
 document.getElementById("bestStreak").innerText=best;
-document.getElementById("avgCompletion").innerText=total?Math.round(totalScore/total)+"%":"0%";
+document.getElementById("avgCompletion").innerText=
+total?Math.round(totalScore/total)+"%":"0%";
 
 }
+
+/* ---------- AI ---------- */
 
 function aiInsights(){
 
@@ -494,13 +488,15 @@ let weekly=parseInt(document.getElementById("weeklyScore").innerText.replace(/\D
 
 let msg="";
 
-if(weekly>=80) msg="🔥 Great consistency this week!";
-else if(weekly>=60) msg="👍 Good progress, keep pushing.";
-else msg="⚠️ Try improving your routine consistency.";
+if(weekly>=80) msg="🔥 Great consistency!";
+else if(weekly>=60) msg="👍 Good progress.";
+else msg="⚠️ Try improving consistency.";
 
 document.getElementById("aiInsights").innerText=msg;
 
 }
+
+/* ---------- DARK MODE ---------- */
 
 function toggleDark(){
 
