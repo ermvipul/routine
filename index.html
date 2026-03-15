@@ -1,40 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-<title>Yearly Activity Tracker</title>
+    <meta charset="UTF-8">
+    <title>Daily Activity Tracker</title>
 
-<style>
-body{
-font-family:Arial;
-background:#f4f6f8;
-text-align:center;
-}
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
 
-.container{
-background:white;
-width:380px;
-margin:auto;
-padding:20px;
-border-radius:10px;
-}
+        h1 {
+            margin-top: 20px;
+            color: #333;
+        }
 
-label{
-display:block;
-margin:8px;
-font-size:17px;
-}
+        .container {
+            background: white;
+            width: 400px;
+            margin: 30px auto;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        }
 
-button{
-margin-top:10px;
-padding:8px 15px;
-border:none;
-background:#007bff;
-color:white;
-border-radius:5px;
-cursor:pointer;
-}
-</style>
+        h3 {
+            margin-top: 20px;
+            color: #444;
+        }
 
+        label {
+            display: block;
+            margin: 10px;
+            font-size: 17px;
+            text-align: left;
+        }
+
+        input[type="date"] {
+            padding: 6px;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 18px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
 </head>
 
 <body>
@@ -43,20 +69,20 @@ cursor:pointer;
 
 <div class="container">
 
-<h3>Select Date</h3>
-<input type="date" id="datePicker">
+    <h3>Select Date</h3>
+    <input type="date" id="datePicker">
 
-<h3>Activities</h3>
+    <h3>Activities</h3>
 
-<label><input type="checkbox" class="task"> Running</label>
-<label><input type="checkbox" class="task"> Gym Workout</label>
-<label><input type="checkbox" class="task"> 8000 Steps</label>
-<label><input type="checkbox" class="task"> Drink 3L Water</label>
-<label><input type="checkbox" class="task"> Healthy Diet</label>
-<label><input type="checkbox" class="task"> Meditation</label>
-<label><input type="checkbox" class="task"> Sleep 7+ Hours</label>
+    <label><input type="checkbox" class="task"> Running</label>
+    <label><input type="checkbox" class="task"> Gym Workout</label>
+    <label><input type="checkbox" class="task"> 8000 Steps</label>
+    <label><input type="checkbox" class="task"> Drink 3L Water</label>
+    <label><input type="checkbox" class="task"> Healthy Diet</label>
+    <label><input type="checkbox" class="task"> Meditation</label>
+    <label><input type="checkbox" class="task"> Sleep 7+ Hours</label>
 
-<button onclick="saveDay()">Save Day</button>
+    <button onclick="saveDay()">Save Day</button>
 
 </div>
 
@@ -64,37 +90,36 @@ cursor:pointer;
 
 document.getElementById("datePicker").valueAsDate = new Date();
 
-function saveDay(){
+function saveDay() {
 
-let date = document.getElementById("datePicker").value;
+    const date = document.getElementById("datePicker").value;
 
-let tasks = document.querySelectorAll(".task");
+    const tasks = document.querySelectorAll(".task");
 
-let data = [];
+    const data = [];
 
-tasks.forEach(task=>{
-data.push(task.checked);
-});
+    tasks.forEach(task => {
+        data.push(task.checked);
+    });
 
-localStorage.setItem("tracker-"+date, JSON.stringify(data));
+    localStorage.setItem("tracker-" + date, JSON.stringify(data));
 
-alert("Saved for " + date);
+    alert("Saved for " + date);
 }
 
 document.getElementById("datePicker").addEventListener("change", loadDay);
 
-function loadDay(){
+function loadDay() {
 
-let date = document.getElementById("datePicker").value;
+    const date = document.getElementById("datePicker").value;
 
-let saved = JSON.parse(localStorage.getItem("tracker-"+date));
+    const saved = JSON.parse(localStorage.getItem("tracker-" + date));
 
-let tasks = document.querySelectorAll(".task");
+    const tasks = document.querySelectorAll(".task");
 
-tasks.forEach((task,i)=>{
-task.checked = saved ? saved[i] : false;
-});
-
+    tasks.forEach((task, i) => {
+        task.checked = saved ? saved[i] : false;
+    });
 }
 
 loadDay();
