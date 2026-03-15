@@ -14,24 +14,33 @@ font-family:Arial;
 background:#f4f6f8;
 margin:0;
 text-align:center;
+transition:0.3s;
 }
 
-h1{
-margin-top:20px;
+.dark{
+background:#1e1e1e;
+color:white;
 }
+
+h1{margin-top:20px;}
 
 .container{
 background:white;
-max-width:450px;
+max-width:460px;
 margin:30px auto;
 padding:25px;
 border-radius:10px;
 box-shadow:0 4px 12px rgba(0,0,0,0.1);
+transition:0.3s;
+}
+
+.dark .container{
+background:#2a2a2a;
 }
 
 label{
 display:block;
-margin:8px 0;
+margin:6px 0;
 text-align:left;
 }
 
@@ -48,7 +57,7 @@ cursor:pointer;
 .reset{background:#dc3545;color:white;}
 
 .score{
-margin-top:8px;
+margin-top:6px;
 font-weight:bold;
 }
 
@@ -75,6 +84,11 @@ canvas{
 margin-top:20px;
 }
 
+.dashboard{
+margin-top:10px;
+font-size:14px;
+}
+
 </style>
 
 </head>
@@ -83,14 +97,14 @@ margin-top:20px;
 
 <h1>📅 Routine Tracker</h1>
 
+<button onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+
 <div class="container">
 
 <h3>Date</h3>
 
 <button class="nav" onclick="prevDay()">⬅</button>
-
 <input type="date" id="datePicker">
-
 <button class="nav" onclick="nextDay()">➡</button>
 
 <h3>Activities</h3>
@@ -115,10 +129,25 @@ margin-top:20px;
 <button class="save" onclick="saveDay()">Save</button>
 <button class="reset" onclick="resetDay()">Reset</button>
 
+<h3>Progress Dashboard</h3>
+
+<div class="dashboard">
+Total Days: <span id="totalDays">0</span><br>
+Best Streak: <span id="bestStreak">0</span><br>
+Average Completion: <span id="avgCompletion">0%</span>
+</div>
+
+<h3>AI Insights</h3>
+<div id="aiInsights"></div>
+
 <h3>Year Activity</h3>
 <div class="heatmap" id="heatmap"></div>
 
+<h3>Weight Progress</h3>
 <canvas id="weightChart" width="400" height="200"></canvas>
+
+<h3>Habit Completion</h3>
+<canvas id="habitChart" width="400" height="200"></canvas>
 
 </div>
 
@@ -131,28 +160,20 @@ const weightInput=document.getElementById("weight");
 
 datePicker.valueAsDate=new Date();
 
-function key(date){
-return "tracker-"+date;
-}
+function key(date){return "tracker-"+date;}
 
 function prevDay(){
-
 let d=new Date(datePicker.value);
 d.setDate(d.getDate()-1);
-
 datePicker.valueAsDate=d;
 loadDay();
-
 }
 
 function nextDay(){
-
 let d=new Date(datePicker.value);
 d.setDate(d.getDate()+1);
-
 datePicker.valueAsDate=d;
 loadDay();
-
 }
 
 function restCount7(date){
@@ -180,16 +201,12 @@ function dailyScore(){
 if(restBox.checked){
 
 let rc=restCount7(datePicker.value);
-
 return rc<2?100:0;
 
 }
 
 let done=0;
-
-tasks.forEach(t=>{
-if(t.checked) done++;
-});
+tasks.forEach(t=>{if(t.checked) done++;});
 
 return Math.round(done/tasks.length*100);
 
@@ -198,7 +215,6 @@ return Math.round(done/tasks.length*100);
 function updateScore(){
 
 let score=dailyScore();
-
 document.getElementById("dailyScore").innerText="Daily Score: "+score+"%";
 
 }
@@ -224,15 +240,16 @@ updateScore();
 weeklyAvg();
 drawHeatmap();
 drawWeightChart();
+drawHabitChart();
 calcStreak();
+updateDashboard();
+aiInsights();
 
 }
 
 function loadDay(){
 
-let date=datePicker.value;
-
-let saved=JSON.parse(localStorage.getItem(key(date)));
+let saved=JSON.parse(localStorage.getItem(key(datePicker.value)));
 
 if(saved){
 
@@ -271,7 +288,6 @@ calcStreak();
 function weeklyAvg(){
 
 let base=new Date(datePicker.value);
-
 let total=0;
 let days=0;
 
@@ -289,13 +305,11 @@ days++;
 if(saved.rest){
 
 let rc=restCount7(d);
-
 if(rc<2) total+=100;
 
 }else{
 
 let c=saved.tasks.filter(x=>x).length;
-
 total+=Math.round(c/tasks.length*100);
 
 }
@@ -320,22 +334,9 @@ let d=new Date();
 d.setDate(d.getDate()-i);
 
 let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-
 if(!saved) break;
 
-let score=0;
-
-if(saved.rest){
-
-let rc=restCount7(d);
-score=rc<2?100:0;
-
-}else{
-
-let c=saved.tasks.filter(x=>x).length;
-score=Math.round(c/tasks.length*100);
-
-}
+let score=saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
 
 if(score>=80) streak++;
 else break;
@@ -349,7 +350,6 @@ document.getElementById("streak").innerText="Streak: "+streak+" days";
 function drawHeatmap(){
 
 const map=document.getElementById("heatmap");
-
 map.innerHTML="";
 
 for(let i=364;i>=0;i--){
@@ -358,22 +358,11 @@ let d=new Date();
 d.setDate(d.getDate()-i);
 
 let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-
 let score=0;
 
 if(saved){
 
-if(saved.rest){
-
-let rc=restCount7(d);
-score=rc<2?100:0;
-
-}else{
-
-let c=saved.tasks.filter(x=>x).length;
-score=Math.round(c/tasks.length*100);
-
-}
+score=saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
 
 }
 
@@ -406,7 +395,6 @@ let d=new Date();
 d.setDate(d.getDate()-i);
 
 let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-
 points.push(saved?parseFloat(saved.weight)||null:null);
 
 }
@@ -417,25 +405,123 @@ let min=Math.min(...points.filter(x=>x));
 ctx.beginPath();
 
 points.forEach((w,i)=>{
-
 if(!w) return;
-
 let x=i*(400/30);
 let y=200-(w-min)/(max-min)*180;
-
 ctx.lineTo(x,y);
-
 });
 
 ctx.stroke();
 
 }
 
+function drawHabitChart(){
+
+const canvas=document.getElementById("habitChart");
+const ctx=canvas.getContext("2d");
+
+ctx.clearRect(0,0,400,200);
+
+let values=[];
+
+for(let i=29;i>=0;i--){
+
+let d=new Date();
+d.setDate(d.getDate()-i);
+
+let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
+
+if(saved){
+values.push(saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100));
+}else{
+values.push(null);
+}
+
+}
+
+ctx.beginPath();
+
+values.forEach((v,i)=>{
+if(v==null) return;
+let x=i*(400/30);
+let y=200-v*2;
+ctx.lineTo(x,y);
+});
+
+ctx.stroke();
+
+}
+
+function updateDashboard(){
+
+let total=0,totalScore=0,best=0,current=0;
+
+for(let i=0;i<365;i++){
+
+let d=new Date();
+d.setDate(d.getDate()-i);
+
+let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
+
+if(saved){
+
+total++;
+
+let score=saved.rest?100:Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
+
+totalScore+=score;
+
+if(score>=80){
+current++;
+best=Math.max(best,current);
+}else{
+current=0;
+}
+
+}
+
+}
+
+document.getElementById("totalDays").innerText=total;
+document.getElementById("bestStreak").innerText=best;
+document.getElementById("avgCompletion").innerText=total?Math.round(totalScore/total)+"%":"0%";
+
+}
+
+function aiInsights(){
+
+let weekly=parseInt(document.getElementById("weeklyScore").innerText.replace(/\D/g,''))||0;
+
+let msg="";
+
+if(weekly>=80) msg="🔥 Great consistency this week!";
+else if(weekly>=60) msg="👍 Good progress, keep pushing.";
+else msg="⚠️ Try improving your routine consistency.";
+
+document.getElementById("aiInsights").innerText=msg;
+
+}
+
+function toggleDark(){
+
+document.body.classList.toggle("dark");
+
+localStorage.setItem("darkMode",
+document.body.classList.contains("dark"));
+
+}
+
+if(localStorage.getItem("darkMode")=="true"){
+document.body.classList.add("dark");
+}
+
 datePicker.addEventListener("change",loadDay);
 
 drawHeatmap();
 drawWeightChart();
+drawHabitChart();
 loadDay();
+updateDashboard();
 
 </script>
 
