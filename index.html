@@ -1,323 +1,1132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>Routine Tracker</title>
-
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
+  :root {
+    --bg: #080b10;
+    --surface: #0e1319;
+    --surface2: #141a22;
+    --border: #1e2730;
+    --accent: #5fffb0;
+    --accent2: #38bdf8;
+    --accent3: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #4a5568;
+    --danger: #f87171;
+  }
 
-body{
-font-family:system-ui;
-background:#0d1117;
-color:white;
-margin:0;
-text-align:center;
-}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-.container{
-background:#161b22;
-max-width:520px;
-margin:30px auto;
-padding:25px;
-border-radius:12px;
-}
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+    overflow-x: hidden;
+  }
 
-h1{margin-top:20px;}
+  /* Animated background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-label{
-display:block;
-text-align:left;
-margin:5px 0;
-}
+  .wrapper {
+    max-width: 560px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
 
-button{
-margin:5px;
-padding:8px 14px;
-border:none;
-border-radius:6px;
-cursor:pointer;
-}
+  /* Header */
+  header {
+    text-align: center;
+    padding: 40px 0 32px;
+    animation: fadeDown 0.6s ease both;
+  }
 
-.save{background:#2ea043;color:white;}
-.reset{background:#da3633;color:white;}
+  .logo-line {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
 
-.score{
-margin-top:6px;
-font-weight:bold;
-}
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
 
-/* HEATMAP */
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+  }
 
-.heatmap-wrapper{
-display:flex;
-justify-content:center;
-margin-top:20px;
-}
+  .subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
 
-.heatmap{
-display:grid;
-grid-template-columns:repeat(53,11px);
-grid-template-rows:repeat(7,11px);
-gap:3px;
-}
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 14px;
+    animation: fadeUp 0.5s ease both;
+  }
 
-.day{
-width:11px;
-height:11px;
-background:#2d333b;
-border-radius:2px;
-position:relative;
-}
+  .card:nth-child(2) { animation-delay: 0.05s; }
+  .card:nth-child(3) { animation-delay: 0.1s; }
+  .card:nth-child(4) { animation-delay: 0.15s; }
+  .card:nth-child(5) { animation-delay: 0.2s; }
+  .card:nth-child(6) { animation-delay: 0.25s; }
 
-.level1{background:#0e4429}
-.level2{background:#006d32}
-.level3{background:#26a641}
-.level4{background:#39d353}
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
 
-.day:hover::after{
-content:attr(data-date);
-position:absolute;
-bottom:16px;
-left:-15px;
-background:black;
-color:white;
-font-size:10px;
-padding:3px 6px;
-border-radius:4px;
-white-space:nowrap;
-}
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
 
-/* charts */
+  .card-title-accent {
+    color: var(--accent);
+    font-size: 15px;
+  }
 
-canvas{
-margin-top:20px;
-max-width:100%;
-}
+  /* Date picker */
+  .date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
 
+  input[type="date"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    flex: 1;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input[type="date"]:focus { border-color: var(--accent); }
+
+  /* Tasks */
+  .tasks-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .task-item {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .task-item input[type="checkbox"] { display: none; }
+
+  .task-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-size: 12.5px;
+    user-select: none;
+  }
+
+  .task-label:hover { border-color: var(--accent); }
+
+  .task-check {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--muted);
+    border-radius: 5px;
+    flex-shrink: 0;
+    transition: all 0.18s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+
+  .task-emoji { font-size: 16px; }
+
+  input[type="checkbox"]:checked + .task-label {
+    background: rgba(95, 255, 176, 0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  input[type="checkbox"]:checked + .task-label .task-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .rest-item {
+    grid-column: 1 / -1;
+  }
+
+  input[type="checkbox"]:checked + .task-label.rest {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: var(--accent3);
+    color: var(--accent3);
+  }
+
+  input[type="checkbox"]:checked + .task-label.rest .task-check {
+    background: var(--accent3);
+    border-color: var(--accent3);
+    color: #000;
+  }
+
+  /* Weight input */
+  .weight-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  input[type="number"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    padding: 10px 14px;
+    border-radius: 8px;
+    width: 120px;
+    outline: none;
+    transition: border-color 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus { border-color: var(--accent2); }
+
+  .weight-unit {
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  /* Score ring */
+  .score-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .ring-wrap {
+    position: relative;
+    width: 80px; height: 80px;
+    flex-shrink: 0;
+  }
+
+  .ring-wrap svg { transform: rotate(-90deg); }
+
+  .ring-bg { stroke: var(--surface2); }
+  .ring-fg {
+    stroke: var(--accent);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s ease;
+  }
+
+  .ring-text {
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+  }
+
+  .ring-pct {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .ring-label {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .score-stats {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent2);
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* Buttons */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.18s ease;
+  }
+
+  .btn-save {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-save:hover { background: #4aeea0; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(95,255,176,0.25); }
+  .btn-save:active { transform: translateY(0); }
+
+  .btn-reset {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+  }
+
+  .btn-reset:hover { background: rgba(248, 113, 113, 0.08); border-color: var(--danger); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 13px;
+    padding: 10px 20px;
+    border-radius: 30px;
+    transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+    z-index: 100;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Dashboard stats */
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+  }
+
+  .dash-stat {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .dash-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .dash-lbl {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Heatmap */
+  .heatmap-scroll {
+    overflow-x: auto;
+    padding-bottom: 6px;
+  }
+
+  .heatmap-scroll::-webkit-scrollbar { height: 4px; }
+  .heatmap-scroll::-webkit-scrollbar-track { background: var(--surface2); border-radius: 2px; }
+  .heatmap-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .heatmap {
+    display: grid;
+    grid-template-columns: repeat(53, 12px);
+    grid-template-rows: repeat(7, 12px);
+    gap: 3px;
+    width: max-content;
+  }
+
+  .day {
+    width: 12px; height: 12px;
+    background: var(--surface2);
+    border-radius: 3px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+
+  .day:hover { transform: scale(1.4); z-index: 2; }
+
+  .day:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a2030;
+    color: #fff;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    border: 1px solid var(--border);
+    pointer-events: none;
+  }
+
+  .l1 { background: #0e4429; }
+  .l2 { background: #006d32; }
+  .l3 { background: #26a641; }
+  .l4 { background: var(--accent); }
+
+  /* Chart */
+  .chart-area {
+    position: relative;
+    height: 160px;
+    margin-top: 8px;
+  }
+
+  canvas { max-width: 100%; }
+
+  .week-bar-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 120px;
+    padding: 0 4px;
+  }
+
+  .week-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .week-bar {
+    width: 100%;
+    background: var(--accent);
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+    transition: height 0.4s cubic-bezier(.22,1,.36,1);
+    opacity: 0.85;
+    position: relative;
+  }
+
+  .week-bar:hover { opacity: 1; }
+
+  .week-bar.empty { background: var(--surface2); }
+
+  .week-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* Weight chart */
+  .weight-chart-wrap {
+    position: relative;
+    height: 160px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  /* Habit bars */
+  .habit-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .habit-name {
+    font-size: 11px;
+    width: 80px;
+    color: var(--text);
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .habit-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: var(--surface2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .habit-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 0.5s cubic-bezier(.22,1,.36,1);
+  }
+
+  .habit-pct {
+    font-size: 11px;
+    color: var(--muted);
+    width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Legend */
+  .heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    justify-content: flex-end;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .legend-box {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+  }
 </style>
-
 </head>
-
 <body>
 
-<h1>📅 Routine Tracker</h1>
+<div class="wrapper">
 
-<div class="container">
+  <header>
+    <div class="logo-line">
+      <div class="logo-icon">📅</div>
+      <h1>ROUTINE</h1>
+    </div>
+    <p class="subtitle">Daily habit tracker & progress monitor</p>
+  </header>
 
-<h3>Date</h3>
+  <!-- Log Entry -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">Log Entry</span>
+    </div>
 
-<input type="date" id="datePicker">
+    <div class="date-row">
+      <input type="date" id="datePicker">
+    </div>
 
-<h3>Activities</h3>
+    <br>
 
-<label><input type="checkbox" class="task"> Running</label>
-<label><input type="checkbox" class="task"> Gym</label>
-<label><input type="checkbox" class="task"> 8000 Steps</label>
-<label><input type="checkbox" class="task"> Drink Water</label>
-<label><input type="checkbox" class="task"> Healthy Diet</label>
-<label><input type="checkbox" class="task"> Meditation</label>
-<label><input type="checkbox" class="task"> Sleep 7h</label>
+    <div class="tasks-grid" id="tasksGrid">
+      <label class="task-item">
+        <input type="checkbox" class="task" data-name="Running">
+        <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">🏃</span>Running</span>
+      </label>
+      <label class="task-item">
+        <input type="checkbox" class="task" data-name="Gym">
+        <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">🏋️</span>Gym</span>
+      </label>
+      <label class="task-item">
+        <input type="checkbox" class="task" data-name="8k Steps">
+        <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">👟</span>8k Steps</span>
+      </label>
+      <label class="task-item">
+        <input type="checkbox" class="task" data-name="Water">
+        <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">💧</span>Water</span>
+      </label>
+      <label class="task-item">
+        <input type="checkbox" class="task" data-name="Diet">
+        <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">🥗</span>Diet</span>
+      </label>
+      <label class="task-item">
+        <input type="checkbox" class="task" data-name="Meditation">
+        <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">🧘</span>Meditation</span>
+      </label>
+      <label class="task-item">
+        <input type="checkbox" class="task" data-name="Sleep 7h">
+        <span class="task-label"><span class="task-check">✓</span><span class="task-emoji">😴</span>Sleep 7h</span>
+      </label>
+      <label class="task-item">
+        <input type="checkbox" id="restDay">
+        <span class="task-label rest"><span class="task-check">✓</span><span class="task-emoji">🛌</span>Rest Day</span>
+      </label>
+    </div>
 
-<label><input type="checkbox" id="restDay"> Rest Day</label>
+    <br>
 
-<h3>Weight</h3>
-<input type="number" id="weight" placeholder="kg">
+    <div class="weight-row">
+      <input type="number" id="weight" placeholder="70.0" step="0.1" min="30" max="300">
+      <span class="weight-unit">kg · body weight</span>
+    </div>
 
-<div class="score" id="dailyScore">Daily Score: 0%</div>
-<div class="score" id="weeklyScore">Weekly Avg: 0%</div>
-<div class="score" id="streak">Streak: 0 days</div>
+    <div class="btn-row">
+      <button class="btn btn-save" onclick="saveDay()">Save Day</button>
+      <button class="btn btn-reset" onclick="resetDay()">Reset</button>
+    </div>
+  </div>
 
-<button class="save" onclick="saveDay()">Save</button>
-<button class="reset" onclick="resetDay()">Reset</button>
+  <!-- Score -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">Today's Score</span>
+    </div>
 
-<h3>Progress Dashboard</h3>
+    <div class="score-section">
+      <div class="ring-wrap">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle class="ring-bg" cx="40" cy="40" r="33" fill="none" stroke-width="7"/>
+          <circle class="ring-fg" id="ringFg" cx="40" cy="40" r="33" fill="none" stroke-width="7"
+            stroke-dasharray="207.3" stroke-dashoffset="207.3"/>
+        </svg>
+        <div class="ring-text">
+          <span class="ring-pct" id="ringPct">0%</span>
+          <span class="ring-label">today</span>
+        </div>
+      </div>
+      <div class="score-stats">
+        <div class="stat-box">
+          <div class="stat-val" id="weeklyScore">–</div>
+          <div class="stat-lbl">Week avg</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="streakVal">0</div>
+          <div class="stat-lbl">🔥 Streak</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="bestStreakVal">0</div>
+          <div class="stat-lbl">Best streak</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="avgCompletion">–</div>
+          <div class="stat-lbl">All-time avg</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-<div>
-Total Days: <span id="totalDays">0</span><br>
-Best Streak: <span id="bestStreak">0</span><br>
-Average Completion: <span id="avgCompletion">0%</span>
+  <!-- Dashboard -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">Overview</span>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-stat">
+        <div class="dash-val" id="totalDays">0</div>
+        <div class="dash-lbl">Days logged</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-val" id="tasksToday">0/7</div>
+        <div class="dash-lbl">Tasks today</div>
+      </div>
+      <div class="dash-stat">
+        <div class="dash-val" id="perfectDays">0</div>
+        <div class="dash-lbl">Perfect days</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">Year Activity</span>
+    </div>
+    <div class="heatmap-scroll">
+      <div class="heatmap" id="heatmap"></div>
+    </div>
+    <div class="heatmap-legend">
+      Less
+      <div class="legend-box" style="background:var(--surface2)"></div>
+      <div class="legend-box" style="background:#0e4429"></div>
+      <div class="legend-box" style="background:#26a641"></div>
+      <div class="legend-box" style="background:var(--accent)"></div>
+      More
+    </div>
+  </div>
+
+  <!-- Weekly bars -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">Last 7 Weeks</span>
+    </div>
+    <div class="week-bar-container" id="weekBars"></div>
+  </div>
+
+  <!-- Habit breakdown -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">Habit Completion (30d)</span>
+    </div>
+    <div id="habitBars"></div>
+  </div>
+
+  <!-- Weight chart -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title-accent">◈</span>
+      <span class="card-title">Weight Trend</span>
+    </div>
+    <canvas id="weightCanvas" height="160"></canvas>
+  </div>
+
 </div>
 
-<h3>Year Activity</h3>
-
-<div class="heatmap-wrapper">
-<div class="heatmap" id="heatmap"></div>
-</div>
-
-<h3>Weight Progress</h3>
-<canvas id="weightChart" width="400" height="200"></canvas>
-
-<h3>Habit Completion</h3>
-<canvas id="habitChart" width="400" height="200"></canvas>
-
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
+const datePicker = document.getElementById('datePicker');
+const tasks = document.querySelectorAll('.task');
+const restBox = document.getElementById('restDay');
+const weightInput = document.getElementById('weight');
+const CIRCUMFERENCE = 2 * Math.PI * 33;
 
-const datePicker=document.getElementById("datePicker");
-const tasks=document.querySelectorAll(".task");
-const restBox=document.getElementById("restDay");
-const weightInput=document.getElementById("weight");
+datePicker.valueAsDate = new Date();
 
-datePicker.valueAsDate=new Date();
+// Load day when date changes
+datePicker.addEventListener('change', loadDay);
 
-function key(date){
-return "tracker-"+date;
+function key(date) { return 'rt2-' + date; }
+
+function getDailyScore() {
+  if (restBox.checked) return 100;
+  let done = 0;
+  tasks.forEach(t => { if (t.checked) done++; });
+  return Math.round(done / tasks.length * 100);
 }
 
-function dailyScore(){
-
-if(restBox.checked) return 100;
-
-let done=0;
-
-tasks.forEach(t=>{
-if(t.checked) done++;
-});
-
-return Math.round(done/tasks.length*100);
-
+function getTaskCount() {
+  let done = 0;
+  tasks.forEach(t => { if (t.checked) done++; });
+  return done;
 }
 
-function updateScore(){
+function updateScoreRing() {
+  const score = getDailyScore();
+  const offset = CIRCUMFERENCE - (score / 100) * CIRCUMFERENCE;
+  document.getElementById('ringFg').style.strokeDashoffset = offset;
+  document.getElementById('ringPct').textContent = score + '%';
 
-document.getElementById("dailyScore").innerText=
-"Daily Score: "+dailyScore()+"%";
+  // Color ring based on score
+  const ring = document.getElementById('ringFg');
+  if (score >= 90) ring.style.stroke = 'var(--accent)';
+  else if (score >= 60) ring.style.stroke = 'var(--accent2)';
+  else ring.style.stroke = 'var(--accent3)';
 
+  document.getElementById('tasksToday').textContent = getTaskCount() + '/7';
 }
 
-tasks.forEach(t=>t.addEventListener("change",updateScore));
-restBox.addEventListener("change",updateScore);
+tasks.forEach(t => t.addEventListener('change', updateScoreRing));
+restBox.addEventListener('change', updateScoreRing);
 
-function saveDay(){
-
-let date=datePicker.value;
-
-let data={
-tasks:[],
-rest:restBox.checked,
-weight:weightInput.value
-};
-
-tasks.forEach(t=>data.tasks.push(t.checked));
-
-localStorage.setItem(key(date),JSON.stringify(data));
-
-updateScore();
-drawHeatmap();
-updateDashboard();
-
+function saveDay() {
+  const date = datePicker.value;
+  const data = {
+    tasks: [...tasks].map(t => t.checked),
+    rest: restBox.checked,
+    weight: weightInput.value
+  };
+  localStorage.setItem(key(date), JSON.stringify(data));
+  showToast('✓ Saved for ' + formatDate(date));
+  updateAll();
 }
 
-function resetDay(){
-
-localStorage.removeItem(key(datePicker.value));
-
-tasks.forEach(t=>t.checked=false);
-restBox.checked=false;
-
-updateScore();
-drawHeatmap();
-
+function resetDay() {
+  localStorage.removeItem(key(datePicker.value));
+  tasks.forEach(t => t.checked = false);
+  restBox.checked = false;
+  weightInput.value = '';
+  updateScoreRing();
+  updateAll();
+  showToast('✗ Entry cleared');
 }
 
-/* HEATMAP */
-
-function drawHeatmap(){
-
-const map=document.getElementById("heatmap");
-
-map.innerHTML="";
-
-let today=new Date();
-let start=new Date();
-start.setDate(today.getDate()-364);
-
-for(let i=0;i<365;i++){
-
-let d=new Date(start);
-d.setDate(start.getDate()+i);
-
-let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-
-let score=0;
-
-if(saved){
-
-let c=saved.tasks.filter(x=>x).length;
-score=Math.round(c/tasks.length*100);
-
+function loadDay() {
+  const date = datePicker.value;
+  const saved = JSON.parse(localStorage.getItem(key(date)));
+  tasks.forEach(t => t.checked = false);
+  restBox.checked = false;
+  weightInput.value = '';
+  if (saved) {
+    saved.tasks.forEach((v, i) => { if (tasks[i]) tasks[i].checked = v; });
+    restBox.checked = saved.rest || false;
+    weightInput.value = saved.weight || '';
+  }
+  updateScoreRing();
 }
 
-let div=document.createElement("div");
-
-div.className="day";
-div.dataset.date=d.toISOString().slice(0,10);
-
-let week=Math.floor(i/7);
-let weekday=d.getDay();
-
-div.style.gridColumn=week+1;
-div.style.gridRow=weekday+1;
-
-if(score>0 && score<40) div.classList.add("level1");
-if(score>=40 && score<70) div.classList.add("level2");
-if(score>=70 && score<90) div.classList.add("level3");
-if(score>=90) div.classList.add("level4");
-
-map.appendChild(div);
-
+function formatDate(d) {
+  const [y, m, day] = d.split('-');
+  return day + '/' + m + '/' + y;
 }
 
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-/* DASHBOARD */
-
-function updateDashboard(){
-
-let total=0,totalScore=0,best=0,current=0;
-
-for(let i=0;i<365;i++){
-
-let d=new Date();
-d.setDate(d.getDate()-i);
-
-let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-
-if(saved){
-
-total++;
-
-let c=saved.tasks.filter(x=>x).length;
-let score=Math.round(c/tasks.length*100);
-
-totalScore+=score;
-
-if(score>=80){
-current++;
-best=Math.max(best,current);
-}else{
-current=0;
+function getScoreForDate(dateStr) {
+  const saved = JSON.parse(localStorage.getItem(key(dateStr)));
+  if (!saved) return null;
+  if (saved.rest) return 100;
+  const c = saved.tasks.filter(x => x).length;
+  return Math.round(c / tasks.length * 100);
 }
 
+function dateStr(d) { return d.toISOString().slice(0, 10); }
+
+// ── Heatmap ──────────────────────────────────────────────────────────────────
+function drawHeatmap() {
+  const map = document.getElementById('heatmap');
+  map.innerHTML = '';
+
+  const today = new Date();
+  const start = new Date(today);
+  start.setDate(today.getDate() - 364);
+
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const ds = dateStr(d);
+    const score = getScoreForDate(ds);
+
+    const div = document.createElement('div');
+    div.className = 'day';
+    div.dataset.tip = ds + (score !== null ? ' · ' + score + '%' : '');
+
+    const week = Math.floor(i / 7);
+    div.style.gridColumn = week + 1;
+    div.style.gridRow = d.getDay() + 1;
+
+    if (score !== null) {
+      if (score < 40) div.classList.add('l1');
+      else if (score < 70) div.classList.add('l2');
+      else if (score < 90) div.classList.add('l3');
+      else div.classList.add('l4');
+    }
+
+    map.appendChild(div);
+  }
 }
 
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function updateDashboard() {
+  let total = 0, totalScore = 0, best = 0, current = 0, perfect = 0;
+  let weekScores = 0, weekDays = 0;
+
+  for (let i = 0; i < 365; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const score = getScoreForDate(dateStr(d));
+
+    if (score !== null) {
+      total++;
+      totalScore += score;
+      if (score === 100) perfect++;
+
+      if (score >= 80) {
+        current++;
+        best = Math.max(best, current);
+      } else {
+        current = 0;
+      }
+
+      if (i < 7) { weekScores += score; weekDays++; }
+    }
+  }
+
+  // Streak (forward from today backward)
+  let streak = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const score = getScoreForDate(dateStr(d));
+    if (score !== null && score >= 80) streak++;
+    else break;
+  }
+
+  document.getElementById('totalDays').textContent = total;
+  document.getElementById('bestStreakVal').textContent = best;
+  document.getElementById('streakVal').textContent = streak;
+  document.getElementById('perfectDays').textContent = perfect;
+  document.getElementById('avgCompletion').textContent = total ? Math.round(totalScore / total) + '%' : '–';
+  document.getElementById('weeklyScore').textContent = weekDays ? Math.round(weekScores / weekDays) + '%' : '–';
 }
 
-document.getElementById("totalDays").innerText=total;
-document.getElementById("bestStreak").innerText=best;
+// ── Weekly Bars ───────────────────────────────────────────────────────────────
+function drawWeekBars() {
+  const container = document.getElementById('weekBars');
+  container.innerHTML = '';
 
-document.getElementById("avgCompletion").innerText=
-total?Math.round(totalScore/total)+"%":"0%";
+  for (let w = 6; w >= 0; w--) {
+    let total = 0, count = 0;
+    for (let d = 0; d < 7; d++) {
+      const date = new Date();
+      date.setDate(date.getDate() - (w * 7 + d));
+      const score = getScoreForDate(dateStr(date));
+      if (score !== null) { total += score; count++; }
+    }
 
+    const avg = count ? Math.round(total / count) : 0;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - (w * 7 + 6));
+    const label = (startDate.getMonth() + 1) + '/' + startDate.getDate();
+
+    const col = document.createElement('div');
+    col.className = 'week-col';
+
+    const bar = document.createElement('div');
+    bar.className = 'week-bar' + (count === 0 ? ' empty' : '');
+    bar.style.height = Math.max(avg, 2) + '%';
+    bar.title = label + ': ' + avg + '%';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'week-label';
+    lbl.textContent = w === 0 ? 'This' : label;
+
+    col.appendChild(bar);
+    col.appendChild(lbl);
+    container.appendChild(col);
+  }
 }
 
-drawHeatmap();
+// ── Habit Bars ────────────────────────────────────────────────────────────────
+function drawHabitBars() {
+  const container = document.getElementById('habitBars');
+  container.innerHTML = '';
+  const names = [...tasks].map(t => t.dataset.name || t.closest('label')?.textContent?.trim() || '?');
+  const counts = new Array(tasks.length).fill(0);
+  let days = 0;
 
+  for (let i = 0; i < 30; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const saved = JSON.parse(localStorage.getItem(key(dateStr(d))));
+    if (saved && !saved.rest) {
+      days++;
+      saved.tasks.forEach((v, idx) => { if (v) counts[idx]++; });
+    }
+  }
+
+  names.forEach((name, i) => {
+    const pct = days ? Math.round(counts[i] / days * 100) : 0;
+    const row = document.createElement('div');
+    row.className = 'habit-row';
+    row.innerHTML = `
+      <div class="habit-name">${name}</div>
+      <div class="habit-bar-bg">
+        <div class="habit-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="habit-pct">${pct}%</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// ── Weight Chart (canvas) ─────────────────────────────────────────────────────
+function drawWeightChart() {
+  const canvas = document.getElementById('weightCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.offsetWidth || 500;
+  canvas.width = W;
+  canvas.height = 160;
+
+  const points = [];
+  for (let i = 59; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const saved = JSON.parse(localStorage.getItem(key(dateStr(d))));
+    if (saved && saved.weight) {
+      points.push({ day: 60 - i, weight: parseFloat(saved.weight) });
+    }
+  }
+
+  ctx.clearRect(0, 0, W, 160);
+
+  if (points.length < 2) {
+    ctx.fillStyle = '#4a5568';
+    ctx.font = '12px DM Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Log weight on at least 2 days to see the trend', W / 2, 80);
+    return;
+  }
+
+  const pad = { t: 20, b: 30, l: 40, r: 16 };
+  const cw = W - pad.l - pad.r;
+  const ch = 160 - pad.t - pad.b;
+
+  const weights = points.map(p => p.weight);
+  const minW = Math.min(...weights) - 1;
+  const maxW = Math.max(...weights) + 1;
+
+  const xScale = i => pad.l + ((i - 1) / 59) * cw;
+  const yScale = w => pad.t + ch - ((w - minW) / (maxW - minW)) * ch;
+
+  // Grid lines
+  ctx.strokeStyle = '#1e2730';
+  ctx.lineWidth = 1;
+  for (let g = 0; g <= 4; g++) {
+    const y = pad.t + (g / 4) * ch;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(pad.l + cw, y);
+    ctx.stroke();
+    const val = maxW - (g / 4) * (maxW - minW);
+    ctx.fillStyle = '#4a5568';
+    ctx.font = '10px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(1), pad.l - 4, y + 4);
+  }
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ch);
+  grad.addColorStop(0, 'rgba(56,189,248,0.3)');
+  grad.addColorStop(1, 'rgba(56,189,248,0)');
+
+  ctx.beginPath();
+  ctx.moveTo(xScale(points[0].day), yScale(points[0].weight));
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(xScale(points[i].day), yScale(points[i].weight));
+  }
+  ctx.lineTo(xScale(points[points.length - 1].day), pad.t + ch);
+  ctx.lineTo(xScale(points[0].day), pad.t + ch);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.moveTo(xScale(points[0].day), yScale(points[0].weight));
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(xScale(points[i].day), yScale(points[i].weight));
+  }
+  ctx.stroke();
+
+  // Dots
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(xScale(p.day), yScale(p.weight), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fill();
+    ctx.strokeStyle = '#080b10';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  });
+}
+
+function updateAll() {
+  drawHeatmap();
+  updateDashboard();
+  drawWeekBars();
+  drawHabitBars();
+  drawWeightChart();
+}
+
+// Init
+loadDay();
+updateAll();
+window.addEventListener('resize', drawWeightChart);
 </script>
-
 </body>
 </html>
