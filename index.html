@@ -6,83 +6,51 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<title>Daily Activity Tracker</title>
+<title>Routine Tracker</title>
 
 <style>
 
 body{
-    font-family: Arial, sans-serif;
-    background:#f4f6f8;
-    margin:0;
-    padding:0;
-    text-align:center;
+font-family:Arial;
+background:#f4f6f8;
+margin:0;
+text-align:center;
 }
 
 h1{
-    margin-top:25px;
-    color:#333;
-}
-
-p.subtitle{
-    color:#666;
+margin-top:20px;
 }
 
 .container{
-    background:white;
-    max-width:420px;
-    margin:30px auto;
-    padding:25px;
-    border-radius:12px;
-    box-shadow:0px 4px 12px rgba(0,0,0,0.1);
-}
-
-h3{
-    margin-top:20px;
-    color:#444;
+background:white;
+max-width:420px;
+margin:30px auto;
+padding:25px;
+border-radius:10px;
+box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 
 label{
-    display:block;
-    margin:10px 0;
-    text-align:left;
-    font-size:16px;
-}
-
-input[type="checkbox"]{
-    margin-right:8px;
-}
-
-input[type="date"]{
-    padding:6px;
-    font-size:16px;
+display:block;
+margin:10px 0;
+text-align:left;
 }
 
 button{
-    margin-top:15px;
-    padding:10px 18px;
-    border:none;
-    border-radius:6px;
-    font-size:14px;
-    cursor:pointer;
+margin:6px;
+padding:8px 14px;
+border:none;
+border-radius:6px;
+cursor:pointer;
 }
 
-.save{
-    background:#007bff;
-    color:white;
-}
+.save{background:#007bff;color:white;}
+.reset{background:#dc3545;color:white;}
+.nav{background:#6c757d;color:white;}
 
-.reset{
-    background:#dc3545;
-    color:white;
-}
-
-button:hover{
-    opacity:0.9;
-}
-
-.progress{
-    margin-top:15px;
-    font-weight:bold;
+.score{
+margin-top:10px;
+font-weight:bold;
 }
 
 </style>
@@ -91,14 +59,17 @@ button:hover{
 
 <body>
 
-<h1>📅 Daily Activity Tracker</h1>
-<p class="subtitle">Track your habits and stay consistent</p>
+<h1>📅 Routine Tracker</h1>
 
 <div class="container">
 
 <h3>Select Date</h3>
 
+<button class="nav" onclick="prevDay()">⬅ Previous</button>
+
 <input type="date" id="datePicker">
+
+<button class="nav" onclick="nextDay()">Next ➡</button>
 
 <h3>Activities</h3>
 
@@ -110,8 +81,19 @@ button:hover{
 <label><input type="checkbox" class="task"> Meditation</label>
 <label><input type="checkbox" class="task"> Sleep 7+ Hours</label>
 
-<div class="progress" id="progress">
-Completion: 0%
+<hr>
+
+<label>
+<input type="checkbox" id="restDay">
+Rest Day
+</label>
+
+<div class="score" id="dailyScore">
+Daily Score: 0%
+</div>
+
+<div class="score" id="monthScore">
+Monthly Score: 0%
 </div>
 
 <button class="save" onclick="saveDay()">Save Day</button>
@@ -123,76 +105,219 @@ Completion: 0%
 
 const datePicker = document.getElementById("datePicker");
 const tasks = document.querySelectorAll(".task");
-const progressText = document.getElementById("progress");
+const restDayBox = document.getElementById("restDay");
 
 datePicker.valueAsDate = new Date();
 
-function updateProgress(){
-
-    let completed = 0;
-
-    tasks.forEach(task=>{
-        if(task.checked) completed++;
-    });
-
-    let percent = Math.round((completed / tasks.length) * 100);
-
-    progressText.innerText = "Completion: " + percent + "%";
+function getKey(date){
+return "tracker-"+date;
 }
 
-tasks.forEach(task=>{
-    task.addEventListener("change", updateProgress);
+function prevDay(){
+
+let d = new Date(datePicker.value);
+d.setDate(d.getDate()-1);
+
+datePicker.valueAsDate = d;
+loadDay();
+}
+
+function nextDay(){
+
+let d = new Date(datePicker.value);
+d.setDate(d.getDate()+1);
+
+datePicker.valueAsDate = d;
+loadDay();
+}
+
+function countRestDaysLast7(date){
+
+let rest = 0;
+
+let base = new Date(date);
+
+for(let i=0;i<7;i++){
+
+let d = new Date(base);
+d.setDate(base.getDate()-i);
+
+let key = getKey(d.toISOString().slice(0,10));
+
+let saved = JSON.parse(localStorage.getItem(key));
+
+if(saved && saved.rest){
+rest++;
+}
+
+}
+
+return rest;
+
+}
+
+function calculateDailyScore(){
+
+let date = datePicker.value;
+
+if(restDayBox.checked){
+
+let restCount = countRestDaysLast7(date);
+
+if(restCount <= 2){
+return 100;
+}
+else{
+return 0;
+}
+
+}
+
+let completed = 0;
+
+tasks.forEach(t=>{
+if(t.checked) completed++;
 });
+
+return Math.round((completed/tasks.length)*100);
+
+}
+
+function updateDailyScore(){
+
+let score = calculateDailyScore();
+
+document.getElementById("dailyScore").innerText =
+"Daily Score: "+score+"%";
+
+}
+
+tasks.forEach(t=>{
+t.addEventListener("change",updateDailyScore);
+});
+
+restDayBox.addEventListener("change",updateDailyScore);
 
 function saveDay(){
 
-    const date = datePicker.value;
+let date = datePicker.value;
 
-    let data = [];
+let data = {
+tasks:[],
+rest:restDayBox.checked
+};
 
-    tasks.forEach(task=>{
-        data.push(task.checked);
-    });
+tasks.forEach(t=>{
+data.tasks.push(t.checked);
+});
 
-    localStorage.setItem("tracker-"+date, JSON.stringify(data));
+localStorage.setItem(getKey(date),JSON.stringify(data));
 
-    updateProgress();
+updateDailyScore();
+updateMonthlyScore();
 
-    alert("Saved for " + date);
+alert("Saved for "+date);
+
 }
 
 function loadDay(){
 
-    const date = datePicker.value;
+let date = datePicker.value;
 
-    const saved = JSON.parse(localStorage.getItem("tracker-"+date));
+let saved = JSON.parse(localStorage.getItem(getKey(date)));
 
-    tasks.forEach((task,index)=>{
-        task.checked = saved ? saved[index] : false;
-    });
+if(saved){
 
-    updateProgress();
+tasks.forEach((t,i)=>{
+t.checked = saved.tasks[i];
+});
+
+restDayBox.checked = saved.rest;
+
+}
+else{
+
+tasks.forEach(t=>t.checked=false);
+restDayBox.checked=false;
+
+}
+
+updateDailyScore();
+updateMonthlyScore();
+
 }
 
 function resetDay(){
 
-    const date = datePicker.value;
+let date = datePicker.value;
 
-    localStorage.removeItem("tracker-"+date);
+localStorage.removeItem(getKey(date));
 
-    tasks.forEach(task=>{
-        task.checked=false;
-    });
+tasks.forEach(t=>t.checked=false);
+restDayBox.checked=false;
 
-    updateProgress();
+updateDailyScore();
+updateMonthlyScore();
+
 }
 
-datePicker.addEventListener("change", loadDay);
+function updateMonthlyScore(){
+
+let date = new Date(datePicker.value);
+
+let year = date.getFullYear();
+let month = date.getMonth();
+
+let total=0;
+let days=0;
+
+for(let i=1;i<=31;i++){
+
+let d = new Date(year,month,i);
+
+if(d.getMonth()!=month) break;
+
+let key = getKey(d.toISOString().slice(0,10));
+
+let saved = JSON.parse(localStorage.getItem(key));
+
+if(saved){
+
+days++;
+
+if(saved.rest){
+
+let restCount = countRestDaysLast7(d);
+
+if(restCount<=2){
+total+=100;
+}
+
+}
+else{
+
+let completed = saved.tasks.filter(x=>x).length;
+
+total+=Math.round((completed/tasks.length)*100);
+
+}
+
+}
+
+}
+
+let avg = days ? Math.round(total/days) : 0;
+
+document.getElementById("monthScore").innerText =
+"Monthly Score: "+avg+"%";
+
+}
+
+datePicker.addEventListener("change",loadDay);
 
 loadDay();
 
 </script>
 
 </body>
-
 </html>
