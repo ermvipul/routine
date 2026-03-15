@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Yearly Activity Tracker</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f4f6f8;
+text-align:center;
+}
+
+.container{
+background:white;
+width:380px;
+margin:auto;
+padding:20px;
+border-radius:10px;
+}
+
+label{
+display:block;
+margin:8px;
+font-size:17px;
+}
+
+button{
+margin-top:10px;
+padding:8px 15px;
+border:none;
+background:#007bff;
+color:white;
+border-radius:5px;
+cursor:pointer;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>Daily Activity Tracker</h1>
+
+<div class="container">
+
+<h3>Select Date</h3>
+<input type="date" id="datePicker">
+
+<h3>Activities</h3>
+
+<label><input type="checkbox" class="task"> Running</label>
+<label><input type="checkbox" class="task"> Gym Workout</label>
+<label><input type="checkbox" class="task"> 8000 Steps</label>
+<label><input type="checkbox" class="task"> Drink 3L Water</label>
+<label><input type="checkbox" class="task"> Healthy Diet</label>
+<label><input type="checkbox" class="task"> Meditation</label>
+<label><input type="checkbox" class="task"> Sleep 7+ Hours</label>
+
+<button onclick="saveDay()">Save Day</button>
+
+</div>
+
+<script>
+
+document.getElementById("datePicker").valueAsDate = new Date();
+
+function saveDay(){
+
+let date = document.getElementById("datePicker").value;
+
+let tasks = document.querySelectorAll(".task");
+
+let data = [];
+
+tasks.forEach(task=>{
+data.push(task.checked);
+});
+
+localStorage.setItem("tracker-"+date, JSON.stringify(data));
+
+alert("Saved for " + date);
+}
+
+document.getElementById("datePicker").addEventListener("change", loadDay);
+
+function loadDay(){
+
+let date = document.getElementById("datePicker").value;
+
+let saved = JSON.parse(localStorage.getItem("tracker-"+date));
+
+let tasks = document.querySelectorAll(".task");
+
+tasks.forEach((task,i)=>{
+task.checked = saved ? saved[i] : false;
+});
+
+}
+
+loadDay();
+
+</script>
+
+</body>
+</html>
