@@ -11,36 +11,26 @@
 
 body{
 font-family:system-ui;
-background:#f6f8fa;
-margin:0;
-text-align:center;
-transition:0.3s;
-}
-
-.dark{
 background:#0d1117;
 color:white;
+margin:0;
+text-align:center;
+}
+
+.container{
+background:#161b22;
+max-width:520px;
+margin:30px auto;
+padding:25px;
+border-radius:12px;
 }
 
 h1{margin-top:20px;}
 
-.container{
-background:white;
-max-width:560px;
-margin:30px auto;
-padding:25px;
-border-radius:12px;
-box-shadow:0 4px 16px rgba(0,0,0,0.08);
-}
-
-.dark .container{
-background:#161b22;
-}
-
 label{
 display:block;
-margin:6px 0;
 text-align:left;
+margin:5px 0;
 }
 
 button{
@@ -51,18 +41,12 @@ border-radius:6px;
 cursor:pointer;
 }
 
-.nav{background:#6c757d;color:white;}
-.save{background:#238636;color:white;}
+.save{background:#2ea043;color:white;}
 .reset{background:#da3633;color:white;}
 
 .score{
 margin-top:6px;
-font-weight:600;
-}
-
-.dashboard{
-font-size:14px;
-margin-top:10px;
+font-weight:bold;
 }
 
 /* HEATMAP */
@@ -75,43 +59,41 @@ margin-top:20px;
 
 .heatmap{
 display:grid;
-grid-template-columns:repeat(53,12px);
-grid-template-rows:repeat(7,12px);
-gap:4px;
+grid-template-columns:repeat(53,11px);
+grid-template-rows:repeat(7,11px);
+gap:3px;
 }
 
 .day{
-width:12px;
-height:12px;
+width:11px;
+height:11px;
+background:#2d333b;
 border-radius:2px;
-background:#ebedf0;
 position:relative;
 }
 
-.dark .day{background:#2d333b;}
-
-.level1{background:#9be9a8}
-.level2{background:#40c463}
-.level3{background:#30a14e}
-.level4{background:#216e39}
-
-/* tooltip */
+.level1{background:#0e4429}
+.level2{background:#006d32}
+.level3{background:#26a641}
+.level4{background:#39d353}
 
 .day:hover::after{
 content:attr(data-date);
 position:absolute;
-bottom:18px;
-left:-20px;
-background:#000;
-color:#fff;
+bottom:16px;
+left:-15px;
+background:black;
+color:white;
 font-size:10px;
 padding:3px 6px;
 border-radius:4px;
 white-space:nowrap;
 }
 
+/* charts */
+
 canvas{
-margin-top:25px;
+margin-top:20px;
 max-width:100%;
 }
 
@@ -123,15 +105,11 @@ max-width:100%;
 
 <h1>📅 Routine Tracker</h1>
 
-<button onclick="toggleDark()">🌙 Dark Mode</button>
-
 <div class="container">
 
 <h3>Date</h3>
 
-<button class="nav" onclick="prevDay()">⬅</button>
 <input type="date" id="datePicker">
-<button class="nav" onclick="nextDay()">➡</button>
 
 <h3>Activities</h3>
 
@@ -157,14 +135,11 @@ max-width:100%;
 
 <h3>Progress Dashboard</h3>
 
-<div class="dashboard">
+<div>
 Total Days: <span id="totalDays">0</span><br>
 Best Streak: <span id="bestStreak">0</span><br>
 Average Completion: <span id="avgCompletion">0%</span>
 </div>
-
-<h3>AI Insights</h3>
-<div id="aiInsights"></div>
 
 <h3>Year Activity</h3>
 
@@ -173,10 +148,10 @@ Average Completion: <span id="avgCompletion">0%</span>
 </div>
 
 <h3>Weight Progress</h3>
-<canvas id="weightChart" width="420" height="200"></canvas>
+<canvas id="weightChart" width="400" height="200"></canvas>
 
 <h3>Habit Completion</h3>
-<canvas id="habitChart" width="420" height="200"></canvas>
+<canvas id="habitChart" width="400" height="200"></canvas>
 
 </div>
 
@@ -189,30 +164,19 @@ const weightInput=document.getElementById("weight");
 
 datePicker.valueAsDate=new Date();
 
-function key(date){return "tracker-"+date;}
-
-function prevDay(){
-let d=new Date(datePicker.value);
-d.setDate(d.getDate()-1);
-datePicker.valueAsDate=d;
-loadDay();
+function key(date){
+return "tracker-"+date;
 }
-
-function nextDay(){
-let d=new Date(datePicker.value);
-d.setDate(d.getDate()+1);
-datePicker.valueAsDate=d;
-loadDay();
-}
-
-/* SCORE */
 
 function dailyScore(){
 
 if(restBox.checked) return 100;
 
 let done=0;
-tasks.forEach(t=>{if(t.checked) done++;});
+
+tasks.forEach(t=>{
+if(t.checked) done++;
+});
 
 return Math.round(done/tasks.length*100);
 
@@ -227,8 +191,6 @@ document.getElementById("dailyScore").innerText=
 
 tasks.forEach(t=>t.addEventListener("change",updateScore));
 restBox.addEventListener("change",updateScore);
-
-/* SAVE */
 
 function saveDay(){
 
@@ -245,103 +207,29 @@ tasks.forEach(t=>data.tasks.push(t.checked));
 localStorage.setItem(key(date),JSON.stringify(data));
 
 updateScore();
-weeklyAvg();
 drawHeatmap();
-drawWeightChart();
-drawHabitChart();
-calcStreak();
 updateDashboard();
-aiInsights();
 
 }
 
-/* LOAD */
+function resetDay(){
 
-function loadDay(){
-
-let saved=JSON.parse(localStorage.getItem(key(datePicker.value)));
-
-if(saved){
-
-tasks.forEach((t,i)=>t.checked=saved.tasks[i]);
-restBox.checked=saved.rest;
-weightInput.value=saved.weight||"";
-
-}else{
+localStorage.removeItem(key(datePicker.value));
 
 tasks.forEach(t=>t.checked=false);
 restBox.checked=false;
-weightInput.value="";
-
-}
 
 updateScore();
-weeklyAvg();
-calcStreak();
+drawHeatmap();
 
 }
 
-/* WEEKLY */
-
-function weeklyAvg(){
-
-let total=0,days=0;
-
-for(let i=0;i<7;i++){
-
-let d=new Date();
-d.setDate(d.getDate()-i);
-
-let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-
-if(saved){
-
-days++;
-
-let c=saved.tasks.filter(x=>x).length;
-total+=Math.round(c/tasks.length*100);
-
-}
-
-}
-
-let avg=days?Math.round(total/days):0;
-
-document.getElementById("weeklyScore").innerText="Weekly Avg: "+avg+"%";
-
-}
-
-/* STREAK */
-
-function calcStreak(){
-
-let streak=0;
-
-for(let i=0;i<365;i++){
-
-let d=new Date();
-d.setDate(d.getDate()-i);
-
-let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
-if(!saved) break;
-
-let c=saved.tasks.filter(x=>x).length;
-let score=Math.round(c/tasks.length*100);
-
-if(score>=80) streak++;
-else break;
-
-}
-
-document.getElementById("streak").innerText="Streak: "+streak+" days";
-
-}
-
-/* TRUE GITHUB HEATMAP */
+/* HEATMAP */
 
 function drawHeatmap(){
 
 const map=document.getElementById("heatmap");
+
 map.innerHTML="";
 
 let today=new Date();
@@ -358,7 +246,10 @@ let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
 let score=0;
 
 if(saved){
-score=Math.round(saved.tasks.filter(x=>x).length/tasks.length*100);
+
+let c=saved.tasks.filter(x=>x).length;
+score=Math.round(c/tasks.length*100);
+
 }
 
 let div=document.createElement("div");
@@ -383,25 +274,48 @@ map.appendChild(div);
 
 }
 
-/* DARK MODE */
+/* DASHBOARD */
 
-function toggleDark(){
+function updateDashboard(){
 
-document.body.classList.toggle("dark");
+let total=0,totalScore=0,best=0,current=0;
 
-localStorage.setItem("darkMode",
-document.body.classList.contains("dark"));
+for(let i=0;i<365;i++){
+
+let d=new Date();
+d.setDate(d.getDate()-i);
+
+let saved=JSON.parse(localStorage.getItem(key(d.toISOString().slice(0,10))));
+
+if(saved){
+
+total++;
+
+let c=saved.tasks.filter(x=>x).length;
+let score=Math.round(c/tasks.length*100);
+
+totalScore+=score;
+
+if(score>=80){
+current++;
+best=Math.max(best,current);
+}else{
+current=0;
+}
 
 }
 
-if(localStorage.getItem("darkMode")=="true"){
-document.body.classList.add("dark");
 }
 
-datePicker.addEventListener("change",loadDay);
+document.getElementById("totalDays").innerText=total;
+document.getElementById("bestStreak").innerText=best;
+
+document.getElementById("avgCompletion").innerText=
+total?Math.round(totalScore/total)+"%":"0%";
+
+}
 
 drawHeatmap();
-loadDay();
 
 </script>
 
