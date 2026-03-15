@@ -134,10 +134,9 @@ loadDay();
 function countRestDaysLast7(date){
 
 let rest = 0;
-
 let base = new Date(date);
 
-for(let i=0;i<7;i++){
+for(let i=1;i<=7;i++){
 
 let d = new Date(base);
 d.setDate(base.getDate()-i);
@@ -146,7 +145,7 @@ let key = getKey(d.toISOString().slice(0,10));
 
 let saved = JSON.parse(localStorage.getItem(key));
 
-if(saved && saved.rest){
+if(saved && saved.rest === true){
 rest++;
 }
 
@@ -164,10 +163,9 @@ if(restDayBox.checked){
 
 let restCount = countRestDaysLast7(date);
 
-if(restCount <= 2){
+if(restCount < 2){
 return 100;
-}
-else{
+}else{
 return 0;
 }
 
@@ -196,7 +194,19 @@ tasks.forEach(t=>{
 t.addEventListener("change",updateDailyScore);
 });
 
-restDayBox.addEventListener("change",updateDailyScore);
+restDayBox.addEventListener("change", function(){
+
+if(restDayBox.checked){
+
+tasks.forEach(t=>{
+t.checked=false;
+});
+
+}
+
+updateDailyScore();
+
+});
 
 function saveDay(){
 
@@ -234,8 +244,7 @@ t.checked = saved.tasks[i];
 
 restDayBox.checked = saved.rest;
 
-}
-else{
+}else{
 
 tasks.forEach(t=>t.checked=false);
 restDayBox.checked=false;
@@ -289,12 +298,11 @@ if(saved.rest){
 
 let restCount = countRestDaysLast7(d);
 
-if(restCount<=2){
+if(restCount < 2){
 total+=100;
 }
 
-}
-else{
+}else{
 
 let completed = saved.tasks.filter(x=>x).length;
 
